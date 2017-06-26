@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{509998C9-171F-4DCC-B62A-F8ACB0DD5E81}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ParallelTest1_ForEach</RootNamespace>
-    <AssemblyName>ParallelTest1-ForEach</AssemblyName>
+    <RootNamespace>ParallelExecution</RootNamespace>
+    <AssemblyName>ParallelExecution</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
