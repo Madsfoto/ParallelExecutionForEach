@@ -9,12 +9,14 @@ namespace ParallelTest1_ForEach
         static void Main(string[] args)
         {
             // Get a list of all the bat files in the current directory, so we can execute them later
-            String[] files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.bat");
+            var paths = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.bat");
+            int count = paths.Length;
 
             // Set the maximum parallel executions via an argument. The other option would be to hardcode it, which I am not a fan of. 
             // The third option is to do (1) "Convert.ToInt32(Math.Ceiling((Environment.ProcessorCount * 0.75) * 1.0))", making use of 75% of the total processer usage. 
             // Currently this does not work. 
-            string str = null;
+            string str = "3";
+
             if (args[0] == null)
             {
                 args[0] = "3";
@@ -37,16 +39,16 @@ namespace ParallelTest1_ForEach
 
             proc.StartInfo.WorkingDirectory = Directory.GetCurrentDirectory(); // It's easier than having to specify where this program will be run.
 
-            // The magick is in the foreach statement: 
+            // The magic is in the foreach statement: 
             // For each of the files in the list, execute the 'current file' in effect the next in the list.
             // While no more than maxParallelExecutions is running at the same time
 
             Parallel.ForEach(
-                files, 
+                paths, 
                 new ParallelOptions { MaxDegreeOfParallelism = maxParallelExecutions }, // use the line from (1) .
                 currentFile =>
             {
-                String filename = Path.GetFileName(currentFile);
+                // String filename = Path.GetFileName(currentFile); // Test if filename is required, can currentFile be used?
 
                 proc.StartInfo.FileName = currentFile; // Set the currentfile as the one being executed. Incrementing automatically.
 
@@ -55,10 +57,11 @@ namespace ParallelTest1_ForEach
                 {
                     proc.Start();
                 Console.WriteLine("started " + currentFile);
+                    Console.WriteLine("[{0,3}/{1,3}] {2}", paths.Length - count, paths.Length, paths);
 
-                // if (proc.waitforexit throws exception, ignore and delete file)
+                    // if (proc.waitforexit throws exception, ignore and delete file)
 
-                
+
                     proc.WaitForExit();
                     //proc.WaitForExit(2147483647);  // Another key point: As we are executing a external batch file, this program thinks that it can start as many bat files as it wants,
                                          // leading to excessive cpu and ram usage. 
@@ -68,18 +71,18 @@ namespace ParallelTest1_ForEach
                 // I let imagemagick handle that error (by giving a console file not found error), and just move on.
                 
                 {
-                    File.Delete(filename); // This is the "The only tool I have is a hammer" approach. I am sure there are smarter and better ways to catch the exceptions
+                    File.Delete(currentFile); // This is the "The only tool I have is a hammer" approach. I am sure there are smarter and better ways to catch the exceptions
                     // but for the purposes of this program, this is fine. 
                     // Since the bat files are single use and can be remade, it does not matter that they are deleted. The files in here are not worth spending time on anyway. 
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    File.Delete(filename);
+                    File.Delete(currentFile);
                     // test
                 }
                 catch (InvalidOperationException)
                 {
-                    File.Delete(filename);
+                    File.Delete(currentFile);
                 }
                 // First level error given is :
                 /*
@@ -135,7 +138,7 @@ tateAndIndex, Func`4 bodyWithStateAndLocal, Func`5 bodyWithEverything, Func`1 lo
    at ParallelTest1_ForEach.Program.Main(String[] args)
 
                 */
-                File.Delete(filename);
+                File.Delete(currentFile);
             });
 
 
