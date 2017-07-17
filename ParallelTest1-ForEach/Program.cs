@@ -1,11 +1,28 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Threading;
 using System.IO;
 
 namespace ParallelTest1_ForEach
 {
     class Program
     {
+        public int currentCount = 1;
+        public int maxCount = 1;
+
+        public void setMaxCount(int count)
+        {
+            maxCount = count;
+        }
+
+        public float percentDone()
+        {
+            float currentCountFloat = currentCount;
+            float percentdone = ((currentCountFloat / maxCount)*100);
+
+            return percentdone;
+        }
+
         public void execbat(string fileName)
         {
             System.Diagnostics.Process proc = new System.Diagnostics.Process();
@@ -19,6 +36,8 @@ namespace ParallelTest1_ForEach
             proc.Start();
             proc.WaitForExit();
         }
+
+
         static void Main(string[] args)
         {
             Program p = new Program();
@@ -26,6 +45,9 @@ namespace ParallelTest1_ForEach
             // Get a list of all the bat files in the current directory, so we can execute them later
             var paths = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.bat");
             int count = paths.Length;
+
+            p.setMaxCount(count);
+
 
             // Set the maximum parallel executions via an argument. The other option would be to hardcode it, which I am not a fan of. 
             // The third option is to do (1) "Convert.ToInt32(Math.Ceiling((Environment.ProcessorCount * 0.75) * 1.0))", making use of 75% of the total processer usage. 
@@ -45,19 +67,21 @@ namespace ParallelTest1_ForEach
             {
                 String fileName = Path.GetFileName(currentFile); // Test if filename is required, can currentFile be used?
 
-                p.execbat(currentFile); // moved the executing logic to a function, so it's self contained and thus will not generate the exceptions seen before. 
-                
-                    
                 Console.WriteLine("started " + currentFile);
+                p.execbat(currentFile); // moved the executing logic to a function, so it's self contained and thus will not generate the exceptions seen before. 
+
+                Interlocked.Increment(ref p.currentCount);
+
                 // Before I've had some "how far are we" logic, but it didn't work. 
-                
-
-                    // if (proc.waitforexit throws exception, ignore and delete file)
 
 
-                   
-                    //proc.WaitForExit(2147483647);  // Another key point: As we are executing a external batch file, this program thinks that it can start as many bat files as it wants,
-                                         // leading to excessive cpu and ram usage. 
+                // if (proc.waitforexit throws exception, ignore and delete file)
+
+
+
+                //proc.WaitForExit(2147483647);  // Another key point: As we are executing a external batch file, this program thinks that it can start as many bat files as it wants,
+                // leading to excessive cpu and ram usage. 
+                Console.WriteLine("percent done = " + p.percentDone());
                 File.Delete(currentFile);
             });
 
