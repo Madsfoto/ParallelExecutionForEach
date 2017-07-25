@@ -34,7 +34,7 @@ namespace ParallelTest1_ForEach
             return currentCount;
         }
 
-        public void execbat(string fileName)
+        public int execbat(string fileName)
         {
             System.Diagnostics.Process proc = new System.Diagnostics.Process();
             // remove the next 2 lines to show the execution of processes. 
@@ -46,6 +46,21 @@ namespace ParallelTest1_ForEach
             proc.StartInfo.FileName = fileName; // Set the currentfile as the one being executed. Incrementing automatically.
             proc.Start();
             proc.WaitForExit();
+            try
+            {
+                File.Delete(fileName);
+            }
+            catch
+            {
+                // The Parallel.ForEach function seems to have an issue with my way of executing.
+                // It gives Execption IO errors, the file is in use by another process. 
+                // This way those exceptions are ignored and the process can continue through the set of .bat files. 
+                // This assumes that the process completes in order, which it should because if the file is not deleted then it can be re-run.
+                // If that is not the case, I'll figure something else out. 
+            }
+            return 0;   // The return 0 is a relic of my testing if it made a difference wether this function was void or int. 
+                        // It did not. Since I am not using the return value for anything I'm keeping it as it is. 
+                        // Yes, I realize it might be technical debt but for a program this size it does not matter.
         }
 
 
@@ -81,17 +96,17 @@ namespace ParallelTest1_ForEach
             // Set the maximum parallel executions via an argument. The other option would be to hardcode it, which I am not a fan of. 
             // The third option is to do (1) "Convert.ToInt32(Math.Ceiling((Environment.ProcessorCount * 0.75) * 1.0))", making use of 75% of the total processer usage. 
 
-           
+
             // The magic is in the foreach statement: 
             // For each of the files in the list, execute the 'current file' in effect the next in the list.
             // While no more than maxParallelExecutions is running at the same time
+            
 
-            //Parallel.ForEach(paths, new ParallelOptions { MaxDegreeOfParallelism = 6 }, // use the line from (1) . // orginal line
 
-            Parallel.ForEach(paths, new ParallelOptions { MaxDegreeOfParallelism = numberOfMaxDegreeOfParallelismInt }, 
-                (currentFile) =>
-            {
-                String fileName = Path.GetFileName(currentFile); // Test if filename is required, can currentFile be used?
+                Parallel.ForEach(paths, new ParallelOptions { MaxDegreeOfParallelism = numberOfMaxDegreeOfParallelismInt },
+                    (currentFile) =>
+                {
+                    String fileName = Path.GetFileName(currentFile); // Test if filename is required, can currentFile be used?
 
                 // Console.WriteLine("started " + currentFile);  // Disabled because it does not matter to the viewer which file is being executed,
                 // The progress indicator is the important thing.
@@ -99,7 +114,7 @@ namespace ParallelTest1_ForEach
 
                 Interlocked.Increment(ref p.currentCount);
 
-                Console.WriteLine("percent done = " + p.percentDone() + " | Images to go = " + p.imagesLeft() + " | Images done this session = " + p.imgsDone());
+                    Console.WriteLine("percent done = " + p.percentDone() + " | Images to go = " + p.imagesLeft() + " | Images done this session = " + p.imgsDone());
                 // TODO: Time remaning. 
                 //
                 /*
@@ -116,9 +131,9 @@ namespace ParallelTest1_ForEach
 
 
                 */
-                File.Delete(currentFile);
-            });
 
+                });
+           
 
 
         }
