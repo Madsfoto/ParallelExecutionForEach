@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
+using System.Diagnostics;
 
 namespace ParallelTest1_ForEach
 {
@@ -63,11 +64,45 @@ namespace ParallelTest1_ForEach
                         // Yes, I realize it might be technical debt but for a program this size it does not matter.
         }
 
+        public string timeRemaining(int seconds)
+        {
+            int daysLeft = 0;
+            int hoursLeft = 0;
+            int minutesLeft = 0;
+            int secondsLeft = 0;
+            string timeRemainStr = "";
+
+            int totalIntInS = seconds;
+
+            Double daysLeftDB = 0;
+            daysLeftDB = Math.Floor((double)totalIntInS / 60 / 60 / 24);
+            daysLeft = (int)daysLeftDB;
+
+            totalIntInS = totalIntInS - (daysLeft * 60 * 60 * 24);
+
+            Double hoursLeftDB = 0;
+            hoursLeftDB = Math.Floor((double)totalIntInS / 60 / 60);
+            hoursLeft = (int)hoursLeftDB;
+
+            totalIntInS = totalIntInS - (hoursLeft * 60 * 60);
+
+            Double minutesLeftDB = 0;
+            minutesLeftDB = Math.Floor((double)totalIntInS / 60);
+            minutesLeft = (int)minutesLeftDB;
+
+            totalIntInS = totalIntInS - (minutesLeft * 60);
+
+            secondsLeft = totalIntInS;
+
+            return timeRemainStr = String.Format("{0:00} days, {1:00} hours, {2:00} minutes and {3:00} seconds", daysLeft, hoursLeft, minutesLeft, secondsLeft);
+        }
+
 
         static void Main(string[] args)
         {
             Program p = new Program();
 
+            var watch = Stopwatch.StartNew();
             // Get a list of all the bat files in the current directory, so we can execute them later
             var paths = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.bat");
             int count = paths.Length;
@@ -101,20 +136,61 @@ namespace ParallelTest1_ForEach
             // For each of the files in the list, execute the 'current file' in effect the next in the list.
             // While no more than maxParallelExecutions is running at the same time
             
+            
 
-
-                Parallel.ForEach(paths, new ParallelOptions { MaxDegreeOfParallelism = numberOfMaxDegreeOfParallelismInt },
-                    (currentFile) =>
+            Parallel.ForEach(paths, new ParallelOptions { MaxDegreeOfParallelism = numberOfMaxDegreeOfParallelismInt }, (currentFile) =>
                 {
                     String fileName = Path.GetFileName(currentFile); // Test if filename is required, can currentFile be used?
 
-                // Console.WriteLine("started " + currentFile);  // Disabled because it does not matter to the viewer which file is being executed,
-                // The progress indicator is the important thing.
-                p.execbat(currentFile); // moved the executing logic to a function, so it's self contained and thus will not generate the exceptions seen before. 
-
+                    // Console.WriteLine("started " + currentFile);  // Disabled because it does not matter to the viewer which file is being executed,
+                    // The progress indicator is the important thing.
+                    var timeForOneExec = Stopwatch.StartNew();
+                    p.execbat(currentFile); // moved the executing logic to a function, so it's self contained and thus will not generate the exceptions seen before. 
+                    timeForOneExec.Stop();
+                    
                 Interlocked.Increment(ref p.currentCount);
+                    double timeSpanTicks = watch.ElapsedTicks;
 
-                    Console.WriteLine("percent done = " + p.percentDone() + " | Images to go = " + p.imagesLeft() + " | Images done this session = " + p.imgsDone());
+                    // TODO: if time larger than 1 sec, remove x sec from time in ms !!!
+                    // How much larger than 1 => remove that amount from ms.
+                    Double avgTimeInMS = 0;
+                    
+                    
+                    double avgTimeInS = ((timeSpanTicks / Stopwatch.Frequency) / p.currentCount);
+                    int intSec = (int)Math.Floor(avgTimeInS);
+
+                    // If average time in seconds is more than 1, remove the 1000 ms from the ms calculations. If this block is not there, times would be written as
+                    // 01:1xxx, where 01 is seconds and 1xxx is the number of ms. Removing 1000 ms gives the expected output of 01:xxx. 
+                    if (avgTimeInS >= 1)
+                    {
+                        avgTimeInMS = (((timeSpanTicks / Stopwatch.Frequency) * 1000) / p.currentCount)-(1000*intSec);
+                    }
+                    else
+                    {
+                        avgTimeInMS = (((timeSpanTicks / Stopwatch.Frequency) * 1000) / p.currentCount);
+                    }
+                    
+                    
+                    TimeSpan timeS1Exec = timeForOneExec.Elapsed;
+
+
+                    
+                    
+                    // Time for 1 execution
+                    string timeStr = String.Format("{0:00}:{1:000}", timeS1Exec.Seconds, timeS1Exec.Milliseconds);
+                    string avgTime = String.Format("{0:00}:{1:000}", avgTimeInS, avgTimeInMS);
+
+                    // Caclulations for the time remaning
+                    
+                    int totalSeconds = (int)Math.Floor((avgTimeInS * p.imagesLeft()));
+
+                    String timeRemainStr = p.timeRemaining(totalSeconds);
+
+
+
+                    Console.WriteLine(p.percentDone() + " done"  +" | Images to go = " + p.imagesLeft() + " | Images done this session = " + p.imgsDone() + 
+                        " | Avg time taken = " + avgTime + " | Time remaning " + timeRemainStr);
+
                 // TODO: Time remaning. 
                 //
                 /*
@@ -133,9 +209,16 @@ namespace ParallelTest1_ForEach
                 */
 
                 });
-           
+            // Time taken calculations
+            watch.Stop();
+            TimeSpan ts = watch.Elapsed;
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+            
+            
 
-
+            Console.WriteLine("Finished at: " + DateTime.Now.ToLongDateString() + " " + DateTime.Now.ToLongTimeString());
+            Console.WriteLine("Time taken: " + elapsedTime);
+            
         }
     }
 }
