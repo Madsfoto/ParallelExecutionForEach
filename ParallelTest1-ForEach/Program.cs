@@ -148,9 +148,8 @@ namespace ParallelTest1_ForEach
                     p.execbat(currentFile); // moved the executing logic to a function, so it's self contained and thus will not generate the exceptions seen before. 
                     timeForOneExec.Stop();
                     
-                Interlocked.Increment(ref p.currentCount);
+                    Interlocked.Increment(ref p.currentCount);
                     double timeSpanTicks = watch.ElapsedTicks;
-
                     // TODO: if time larger than 1 sec, remove x sec from time in ms !!!
                     // How much larger than 1 => remove that amount from ms.
                     Double avgTimeInMS = 0;
@@ -184,7 +183,10 @@ namespace ParallelTest1_ForEach
                     
                     int totalSeconds = (int)Math.Floor((avgTimeInS * p.imagesLeft()));
 
-                    String timeRemainStr = p.timeRemaining(totalSeconds);
+                    String timeRemainStr = p.timeRemaining(totalSeconds); // Done via own function
+                    TimeSpan timeSpan = TimeSpan.FromSeconds(((timeSpanTicks / Stopwatch.Frequency) / p.currentCount) * p.imagesLeft());
+                    //String timeRemainStr = timeSpan.ToString(); // The correct way to do it. Formatting required if someone wants to use it.
+                    
 
 
 
